@@ -7,7 +7,6 @@ frontend:
         - npm ci
     build:
       commands:
-        - cd examples/nextjs-app
         - npm run build
   artifacts:
     baseDirectory: examples/nextjs-app/.next
