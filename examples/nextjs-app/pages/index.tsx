@@ -1,14 +1,8 @@
-import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import PublicationsList from '@/components/PublicationsList';
-import { PageProps } from '@/types';
 import { config } from '@/lib/config';
 
-interface HomeProps extends PageProps {
-  // Add any additional props here
-}
-
-export default function Home({ apiEndpoint }: HomeProps) {
+export default function Home() {
   return (
     <>
       <Head>
@@ -21,19 +15,10 @@ export default function Home({ apiEndpoint }: HomeProps) {
       </Head>
       
       <main>
-        <PublicationsList apiEndpoint={apiEndpoint} />
+        <PublicationsList apiEndpoint={config.apiEndpoint} />
       </main>
     </>
   );
 }
 
-export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  // Get API endpoint from configuration
-  const apiEndpoint = config.apiEndpoint;
-
-  return {
-    props: {
-      apiEndpoint,
-    },
-  };
-}; 
+ 
