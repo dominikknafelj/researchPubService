@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  researchPubService - A serverless notification system for research publications (TypeScript)
+Transform:
+- AWS::Serverless-2016-10-31
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Tracing: Active
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+    MemorySize: 128
+    Timeout: 100
+    Environment:
+      Variables:
+        NODE_OPTIONS: --enable-source-maps
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
+    # Enable CORS for all API Gateway endpoints
+    Cors:
+      AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowOrigin: "'*'"
+
+# Resources declares the AWS resources that you want to include in the stack
+Resources:
+  # Lambda function for processing publication webhook data
+  processPublicationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: process-publication.processPublicationHandler
+      Description: Processes incoming webhook data for research publications and categorizes them by education level
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PublicationsTable
+      Environment:
+        Variables:
+          PUBLICATIONS_TABLE: !Ref PublicationsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /publications
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - src/handlers/process-publication.ts
+
+  # Lambda function for retrieving all publications
+  getAllPublicationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: get-all-publications.getAllPublicationsHandler
+      Description: A HTTP get method to get all publications from the DynamoDB table
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PublicationsTable
+      Environment:
+        Variables:
+          PUBLICATIONS_TABLE: !Ref PublicationsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /publications
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - src/handlers/get-all-publications.ts
+
+  # Lambda function for retrieving a publication by ID
+  getPublicationByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: get-publication-by-id.getPublicationByIdHandler
+      Description: A HTTP get method to get one publication by id from the DynamoDB table
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PublicationsTable
+      Environment:
+        Variables:
+          PUBLICATIONS_TABLE: !Ref PublicationsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /publications/{id}
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - src/handlers/get-publication-by-id.ts
+
+  # DynamoDB table to store publications with metadata
+  PublicationsTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+  # Application monitoring and resource grouping
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+
+Outputs:
+  WebEndpoint:
+    Description: API Gateway endpoint URL for Prod stage
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Export:
+      Name: !Sub "${AWS::StackName}-WebEndpoint"
+  
+  PublicationsTableName:
+    Description: DynamoDB table name for publications
+    Value: !Ref PublicationsTable
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicationsTable"

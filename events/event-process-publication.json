@@ -1,0 +1,8 @@
+{
+  "httpMethod": "POST",
+  "path": "/publications",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": "{\"title\": \"Innovative Teaching Methods in Higher Education\", \"abstract\": \"This comprehensive study examines the effectiveness of innovative teaching methods in university classrooms, focusing on student engagement and learning outcomes in undergraduate courses.\", \"authors\": [\"Dr. Sarah Johnson\", \"Prof. Michael Chen\", \"Dr. Emily Rodriguez\"], \"publicationDate\": \"2024-01-15\", \"keywords\": \"higher education, teaching methods, student engagement, undergraduate, university\", \"description\": \"A detailed analysis of modern pedagogical approaches in higher education settings\", \"sourceUrl\": \"https://example.com/publications/innovative-teaching-methods\"}"
+} 
