@@ -1,0 +1,22 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd examples/nextjs-app
+        - npm ci
+    build:
+      commands:
+        - cd examples/nextjs-app
+        - npm run build
+  artifacts:
+    baseDirectory: examples/nextjs-app/.next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - examples/nextjs-app/node_modules/**/*
+  env:
+    variables:
+      # Set in Amplify Console UI
+      # NEXT_PUBLIC_API_ENDPOINT: 'https://1ocg29j297.execute-api.us-east-1.amazonaws.com/Prod' 
