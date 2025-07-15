@@ -7,6 +7,7 @@ import {
   CategoryInfo,
   PublicationsListProps,
 } from '@/types';
+import { logger } from '@/lib/logger';
 
 const PublicationsList: React.FC<PublicationsListProps> = ({ 
   apiEndpoint = 'https://your-api-gateway-url.amazonaws.com/Prod' 
@@ -32,6 +33,7 @@ const PublicationsList: React.FC<PublicationsListProps> = ({
   ];
 
   useEffect(() => {
+    logger.info('PublicationsList component mounted', { apiEndpoint });
     void fetchPublications();
   }, [selectedCategory]);
 
@@ -39,18 +41,32 @@ const PublicationsList: React.FC<PublicationsListProps> = ({
     setLoading(true);
     setError(null);
     
+    const startTime = Date.now();
+    
     try {
       const url = selectedCategory === 'all' 
         ? `${apiEndpoint}/publications`
         : `${apiEndpoint}/publications?educationLevel=${encodeURIComponent(selectedCategory)}`;
       
+      logger.info('Fetching publications', { category: selectedCategory, url });
+      
       const response = await fetch(url);
+      const duration = Date.now() - startTime;
+      
+      logger.apiCall('GET', url, response.status, duration);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data: GetAllPublicationsResponse = await response.json();
+      
+      logger.info('Publications fetched successfully', { 
+        count: data.publications?.length || 0,
+        category: selectedCategory,
+        summary: data.summary 
+      });
+      
       setPublications(data.publications || []);
       setSummary(data.summary || {
         total: 0,
@@ -63,6 +79,8 @@ const PublicationsList: React.FC<PublicationsListProps> = ({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
+      
+      logger.appError(err instanceof Error ? err : new Error(errorMessage), 'fetchPublications');
       console.error('Error fetching publications:', err);
     } finally {
       setLoading(false);
@@ -98,6 +116,7 @@ const PublicationsList: React.FC<PublicationsListProps> = ({
 
   const handleCategoryChange = (event: React.ChangeEvent<HTMLSelectElement>): void => {
     const value = event.target.value as EducationLevel | 'all';
+    logger.userAction('Category filter changed', { from: selectedCategory, to: value });
     setSelectedCategory(value);
   };
 
@@ -125,7 +144,10 @@ const PublicationsList: React.FC<PublicationsListProps> = ({
         <div className="error-message">
           <h3>Error Loading Publications</h3>
           <p>{error}</p>
-          <button onClick={() => void fetchPublications()} className="retry-button">
+          <button onClick={() => {
+            logger.userAction('Retry button clicked', { context: 'error state' });
+            void fetchPublications();
+          }} className="retry-button">
             Try Again
           </button>
         </div>
@@ -233,7 +255,10 @@ const PublicationsList: React.FC<PublicationsListProps> = ({
 
       {/* Refresh Button */}
       <div className="refresh-section">
-        <button onClick={() => void fetchPublications()} className="refresh-button">
+        <button onClick={() => {
+          logger.userAction('Refresh button clicked', { context: 'main refresh' });
+          void fetchPublications();
+        }} className="refresh-button">
           Refresh Publications
         </button>
       </div>
